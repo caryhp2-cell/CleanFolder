@@ -13,11 +13,11 @@ The app validates `models/manifest.json`, checks that every bundled model exists
 
 ## NPU policy
 
-The app does not silently use CPU or GPU for AI inference. It accepts:
+The app does not silently use CPU or GPU for AI inference. On this Intel Core Ultra 5 225H machine, the supported route is:
 
-- `QNNExecutionProvider` with HTP backend for Qualcomm Snapdragon X class NPUs.
-- `OpenVINOExecutionProvider` configured with `device_type=NPU` for Intel NPUs.
-- `VitisAIExecutionProvider` for supported AMD/Xilinx NPU stacks.
+- `onnxruntime-openvino==1.24.1`
+- `openvino==2025.4.1`
+- `OpenVINOExecutionProvider` configured with `device_type=NPU`
 
 File enumeration, parsing, image decoding, filename cleanup, and log writes still use normal CPU work because those are not NPU inference tasks.
 

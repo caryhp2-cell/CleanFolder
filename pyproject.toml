@@ -9,7 +9,8 @@ description = "Offline Windows desktop app for NPU-gated content-based file rena
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
-  "onnxruntime>=1.18",
+  "onnxruntime-openvino==1.24.1",
+  "openvino==2025.4.1",
   "pillow>=10.0",
   "pypdf>=4.0",
   "python-docx>=1.1",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,9 @@ class ModelSpec:
     task: str
     sha256: str
     required_provider: str
+
+
+_DLL_DIRECTORY_HANDLES: list[object] = []
 
 
 def default_models_dir() -> Path:
@@ -74,16 +78,25 @@ def validate_model_sessions(npu_status: NpuStatus, manifest_path: Path | None = 
     if not npu_status.available or npu_status.provider is None:
         return ModelAssetStatus(False, npu_status.message, asset_status.model_ids)
 
+    if npu_status.provider == "OpenVINOExecutionProvider":
+        add_openvino_dll_directory()
+
     provider_options: list[dict[str, Any]] | None = (
         list(npu_status.provider_options) if npu_status.provider_options else None
     )
     for spec in load_manifest(manifest_path or default_models_dir() / "manifest.json"):
         try:
-            ort.InferenceSession(
+            session = ort.InferenceSession(
                 str(spec.path),
                 providers=[npu_status.provider],
                 provider_options=provider_options,
             )
+            if session.get_providers()[0] != npu_status.provider:
+                return ModelAssetStatus(
+                    False,
+                    f"Bundled model did not bind to {npu_status.provider}: {spec.id}",
+                    asset_status.model_ids,
+                )
         except Exception as error:
             return ModelAssetStatus(
                 False,
@@ -99,3 +112,18 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def add_openvino_dll_directory() -> None:
+    try:
+        import openvino
+    except ImportError:
+        return
+
+    libs_dir = Path(openvino.__file__).resolve().parent / "libs"
+    if not libs_dir.exists():
+        return
+    os.environ["PATH"] = f"{libs_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+    if hasattr(os, "add_dll_directory"):
+        handle = os.add_dll_directory(str(libs_dir))
+        _DLL_DIRECTORY_HANDLES.append(handle)
