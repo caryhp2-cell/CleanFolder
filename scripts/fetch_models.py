@@ -28,6 +28,13 @@ MODEL_FILES = [
     },
     {
         "repo_id": "SWHL/RapidOCR",
+        "filename": "PP-OCRv1/ch_ppocr_mobile_v2.0_cls_infer.onnx",
+        "target": "image-ocr-cls-v1.onnx",
+        "id": "image-ocr-cls-v1",
+        "task": "image-ocr-classification",
+    },
+    {
+        "repo_id": "SWHL/RapidOCR",
         "filename": "PP-OCRv4/ch_PP-OCRv4_rec_infer.onnx",
         "target": "image-ocr-rec-v1.onnx",
         "id": "image-ocr-rec-v1",
@@ -54,7 +61,7 @@ def main() -> None:
                 "path": item["target"],
                 "task": item["task"],
                 "sha256": sha256_file(target),
-                "required_provider": "QNNExecutionProvider",
+                "required_provider": "OpenVINOExecutionProvider",
                 "source_repo": item["repo_id"],
                 "source_file": item["filename"],
             }
