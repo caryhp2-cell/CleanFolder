@@ -4,6 +4,11 @@ Windows desktop app for offline, content-based file rename suggestions.
 
 The first version supports documents and images. AI analysis is gated by bundled model validation and NPU availability. If bundled model files are missing, hashes do not match, or no supported NPU-backed ONNX Runtime provider is available, the app disables analysis instead of falling back to CPU or GPU inference.
 
+## Features
+
+- Rename: choose a folder, preview content-based dated filenames, apply selected renames, and undo from `rename-log.jsonl`.
+- Article Analysis: choose a `.txt`, `.md`, `.pdf`, or `.docx` file and generate an offline extractive summary with key sentences and a suggested title.
+
 ## Selected bundled model route
 
 - Documents: `Xenova/paraphrase-multilingual-MiniLM-L12-v2` ONNX, used as the bundled multilingual text understanding model.

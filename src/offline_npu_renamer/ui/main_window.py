@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QPlainTextEdit,
+    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -18,6 +20,8 @@ from PySide6.QtWidgets import (
 )
 
 from offline_npu_renamer.core.analyzer import analyze_file
+from offline_npu_renamer.core.article_analysis import analyze_article_text
+from offline_npu_renamer.core.extractors import extract_document_content
 from offline_npu_renamer.core.model_assets import validate_model_sessions
 from offline_npu_renamer.core.models import RenameSuggestion, SuggestionStatus
 from offline_npu_renamer.core.npu import detect_npu_status
@@ -36,6 +40,20 @@ class MainWindow(QMainWindow):
 
         self.status_label = QLabel(self._startup_message())
         self.status_label.setWordWrap(True)
+
+        tabs = QTabWidget()
+        tabs.addTab(self._build_rename_tab(), "Rename")
+        tabs.addTab(self._build_article_tab(), "Article Analysis")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.status_label)
+        layout.addWidget(tabs)
+
+        root = QWidget()
+        root.setLayout(layout)
+        self.setCentralWidget(root)
+
+    def _build_rename_tab(self) -> QWidget:
         self.folder_label = QLabel("No folder selected")
         self.choose_button = QPushButton("Choose Folder")
         self.scan_button = QPushButton("Scan")
@@ -63,9 +81,33 @@ class MainWindow(QMainWindow):
         layout.addLayout(top)
         layout.addWidget(self.table)
 
-        root = QWidget()
-        root.setLayout(layout)
-        self.setCentralWidget(root)
+        tab = QWidget()
+        tab.setLayout(layout)
+        return tab
+
+    def _build_article_tab(self) -> QWidget:
+        self.article_path: Path | None = None
+        self.article_label = QLabel("No article selected")
+        self.choose_article_button = QPushButton("Choose Article")
+        self.analyze_article_button = QPushButton("Analyze Article")
+        self.article_output = QPlainTextEdit()
+        self.article_output.setReadOnly(True)
+
+        self.choose_article_button.clicked.connect(self.choose_article)
+        self.analyze_article_button.clicked.connect(self.analyze_article)
+
+        top = QHBoxLayout()
+        top.addWidget(self.choose_article_button)
+        top.addWidget(self.analyze_article_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.article_label)
+        layout.addLayout(top)
+        layout.addWidget(self.article_output)
+
+        tab = QWidget()
+        tab.setLayout(layout)
+        return tab
 
     def choose_folder(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Choose folder")
@@ -128,6 +170,45 @@ class MainWindow(QMainWindow):
         results = undo_latest(self.selected_folder / "rename-log.jsonl")
         undone = sum(1 for _, _, status in results if status == "undone")
         QMessageBox.information(self, "Undo complete", f"Undone {undone} file(s).")
+
+    def choose_article(self) -> None:
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose article",
+            "",
+            "Documents (*.txt *.md *.pdf *.docx)",
+        )
+        if file_path:
+            self.article_path = Path(file_path)
+            self.article_label.setText(str(self.article_path))
+
+    def analyze_article(self) -> None:
+        if self.article_path is None:
+            QMessageBox.warning(self, "No article", "Choose an article first.")
+            return
+        if not self.model_status.available:
+            QMessageBox.warning(self, "Models unavailable", self.model_status.message)
+            return
+        if not self.npu_status.available:
+            QMessageBox.warning(self, "NPU unavailable", self.npu_status.message)
+            return
+        try:
+            content = extract_document_content(self.article_path)
+        except Exception as error:
+            QMessageBox.warning(self, "Article read failed", str(error))
+            return
+        result = analyze_article_text(content.text, self.model_status, self.npu_status)
+        if result.status is SuggestionStatus.ERROR:
+            QMessageBox.warning(self, "Analysis failed", result.reason)
+            return
+        self.article_output.setPlainText(
+            "Suggested title:\n"
+            f"{result.suggested_title}\n\n"
+            "Summary:\n"
+            f"{result.summary}\n\n"
+            "Key sentences:\n"
+            + "\n".join(f"- {sentence}" for sentence in result.key_sentences)
+        )
 
     def _startup_message(self) -> str:
         if not self.model_status.available:
