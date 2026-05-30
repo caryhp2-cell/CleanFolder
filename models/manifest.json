@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "document-title-v1",
+      "path": "document-title-v1.onnx",
+      "task": "document-title",
+      "sha256": "d6ea442ff6a891daefed7c83b2f596fc5dc66bf697e4d006236f64f34bbcf4c8",
+      "required_provider": "QNNExecutionProvider",
+      "source_repo": "Xenova/paraphrase-multilingual-MiniLM-L12-v2",
+      "source_file": "onnx/model_int8.onnx"
+    },
+    {
+      "id": "image-ocr-det-v1",
+      "path": "image-ocr-det-v1.onnx",
+      "task": "image-ocr-detection",
+      "sha256": "d2a7720d45a54257208b1e13e36a8479894cb74155a5efe29462512d42f49da9",
+      "required_provider": "QNNExecutionProvider",
+      "source_repo": "SWHL/RapidOCR",
+      "source_file": "PP-OCRv4/ch_PP-OCRv4_det_infer.onnx"
+    },
+    {
+      "id": "image-ocr-rec-v1",
+      "path": "image-ocr-rec-v1.onnx",
+      "task": "image-ocr-recognition",
+      "sha256": "48fc40f24f6d2a207a2b1091d3437eb3cc3eb6b676dc3ef9c37384005483683b",
+      "required_provider": "QNNExecutionProvider",
+      "source_repo": "SWHL/RapidOCR",
+      "source_file": "PP-OCRv4/ch_PP-OCRv4_rec_infer.onnx"
+    }
+  ],
+  "npu_policy": {
+    "no_cpu_or_gpu_ai_fallback": true,
+    "preferred_providers": [
+      "QNNExecutionProvider",
+      "OpenVINOExecutionProvider",
+      "VitisAIExecutionProvider"
+    ]
+  }
+}
