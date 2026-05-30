@@ -4,7 +4,7 @@
 
 **Goal:** Build a Windows offline desktop app that scans a selected folder, previews content-based filename suggestions with `YYYY-MM-DD_` prefixes, confirms batch renames, and writes undoable logs while requiring NPU-backed AI inference availability.
 
-**Architecture:** Use a small Python package with separated core services for NPU detection, file scanning, content extraction, filename generation, rename planning, and undo logging. The GUI is a thin PySide6 shell over the core services, so most behavior is testable without a desktop session.
+**Architecture:** Use a small Python package with separated core services for bundled model validation, NPU detection, file scanning, content extraction, filename generation, rename planning, and undo logging. The GUI is a thin PySide6 shell over the core services, so most behavior is testable without a desktop session.
 
 **Tech Stack:** Python 3.11+, PySide6, pytest, pypdf, python-docx, Pillow, ONNX Runtime, JSON Lines logs.
 
@@ -17,6 +17,7 @@
 - `src/offline_npu_renamer/__init__.py`: package marker and version.
 - `src/offline_npu_renamer/app.py`: PySide6 application entrypoint.
 - `src/offline_npu_renamer/core/models.py`: shared dataclasses and enums.
+- `src/offline_npu_renamer/core/model_assets.py`: bundled model manifest loading, SHA-256 validation, and model availability reporting.
 - `src/offline_npu_renamer/core/npu.py`: ONNX Runtime provider detection and NPU availability policy.
 - `src/offline_npu_renamer/core/scanner.py`: supported file discovery in one selected folder.
 - `src/offline_npu_renamer/core/extractors.py`: local document and image text extraction.
@@ -25,7 +26,9 @@
 - `src/offline_npu_renamer/core/renamer.py`: apply rename plans and skip unsafe operations.
 - `src/offline_npu_renamer/core/logging.py`: JSON Lines rename log and undo records.
 - `src/offline_npu_renamer/ui/main_window.py`: folder picker, NPU status, preview table, apply and undo buttons.
-- `models/manifest.example.json`: documented offline model manifest shape without bundling model binaries.
+- `models/manifest.json`: required bundled offline model manifest.
+- `models/document-title-v1.onnx`: bundled document title or summarization model asset, stored directly or via Git LFS.
+- `models/image-title-v1.onnx`: bundled OCR or image understanding model asset, stored directly or via Git LFS.
 - `tests/fixtures/`: small text and generated binary fixtures.
 - `tests/test_*.py`: focused tests for each core service.
 
@@ -95,7 +98,7 @@ Write `README.md`:
 
 Windows desktop app for offline, content-based file rename suggestions.
 
-The first version supports documents and images. AI inference is gated by NPU availability. If no supported NPU-backed ONNX Runtime provider is available, the app disables analysis instead of falling back to CPU or GPU inference.
+The first version supports documents and images. AI inference is gated by bundled model validation and NPU availability. If bundled model files are missing, hashes do not match, or no supported NPU-backed ONNX Runtime provider is available, the app disables analysis instead of falling back to CPU or GPU inference.
 
 ## Run locally
 
@@ -106,9 +109,9 @@ pip install -e ".[dev]"
 offline-npu-renamer
 ```
 
-## Offline model files
+## Bundled offline model files
 
-Place model files under `models/` and describe them in `models/manifest.json`. The app must not download models at runtime.
+The first version ships with offline ONNX model files under `models/` and describes them in `models/manifest.json`. The app must not download models at runtime. If the installed model files are missing or corrupted, analysis is disabled.
 ```
 
 - [ ] **Step 4: Verify install metadata**
@@ -330,6 +333,155 @@ Expected: PASS.
 ```powershell
 git add src/offline_npu_renamer/core/npu.py tests/test_npu.py
 git commit -m "feat: add NPU inference gate"
+```
+
+## Task 3A: Bundled Model Asset Validation
+
+**Files:**
+- Create: `src/offline_npu_renamer/core/model_assets.py`
+- Test: `tests/test_model_assets.py`
+
+- [ ] **Step 1: Write bundled model validation tests**
+
+Write `tests/test_model_assets.py`:
+
+```python
+import hashlib
+import json
+
+from offline_npu_renamer.core.model_assets import validate_model_assets
+
+
+def test_validate_model_assets_accepts_present_hashed_models(tmp_path):
+    model_path = tmp_path / "document-title-v1.onnx"
+    model_path.write_bytes(b"fake-onnx-bytes")
+    digest = hashlib.sha256(b"fake-onnx-bytes").hexdigest()
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "models": [
+                    {
+                        "id": "document-title-v1",
+                        "path": "document-title-v1.onnx",
+                        "task": "document-title",
+                        "sha256": digest,
+                        "required_provider": "QNNExecutionProvider",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = validate_model_assets(manifest_path)
+
+    assert status.available is True
+    assert status.message == "Bundled offline models validated."
+
+
+def test_validate_model_assets_rejects_missing_model(tmp_path):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "models": [
+                    {
+                        "id": "image-title-v1",
+                        "path": "image-title-v1.onnx",
+                        "task": "image-title",
+                        "sha256": "abc",
+                        "required_provider": "QNNExecutionProvider",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = validate_model_assets(manifest_path)
+
+    assert status.available is False
+    assert "Missing bundled model" in status.message
+```
+
+- [ ] **Step 2: Run the failing tests**
+
+Run: `pytest tests/test_model_assets.py -v`
+
+Expected: FAIL because `model_assets.py` does not exist.
+
+- [ ] **Step 3: Implement bundled model validation**
+
+Write `src/offline_npu_renamer/core/model_assets.py`:
+
+```python
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class ModelAssetStatus:
+    available: bool
+    message: str
+    model_ids: tuple[str, ...]
+
+
+def validate_model_assets(manifest_path: Path) -> ModelAssetStatus:
+    if not manifest_path.exists():
+        return ModelAssetStatus(False, f"Missing bundled model manifest: {manifest_path}", ())
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    root = manifest_path.parent
+    model_ids: list[str] = []
+
+    for model in manifest.get("models", []):
+        model_id = str(model["id"])
+        model_ids.append(model_id)
+        model_path = root / str(model["path"])
+        if not model_path.exists():
+            return ModelAssetStatus(False, f"Missing bundled model: {model_id}", tuple(model_ids))
+
+        expected_hash = str(model["sha256"]).lower()
+        actual_hash = _sha256(model_path)
+        if actual_hash != expected_hash:
+            return ModelAssetStatus(
+                False,
+                f"Bundled model hash mismatch for {model_id}",
+                tuple(model_ids),
+            )
+
+    if not model_ids:
+        return ModelAssetStatus(False, "Bundled model manifest contains no models.", ())
+
+    return ModelAssetStatus(True, "Bundled offline models validated.", tuple(model_ids))
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+```
+
+- [ ] **Step 4: Verify bundled model validation tests pass**
+
+Run: `pytest tests/test_model_assets.py -v`
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```powershell
+git add src/offline_npu_renamer/core/model_assets.py tests/test_model_assets.py
+git commit -m "feat: validate bundled offline models"
 ```
 
 ## Task 4: File Scanner
@@ -1114,6 +1266,7 @@ from PySide6.QtWidgets import (
 )
 
 from offline_npu_renamer.core.analyzer import analyze_file
+from offline_npu_renamer.core.model_assets import validate_model_assets
 from offline_npu_renamer.core.models import RenameSuggestion, SuggestionStatus
 from offline_npu_renamer.core.npu import detect_npu_status
 from offline_npu_renamer.core.renamer import apply_renames, undo_latest
@@ -1126,9 +1279,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Offline NPU Renamer")
         self.selected_folder: Path | None = None
         self.suggestions: list[RenameSuggestion] = []
+        self.model_status = validate_model_assets(Path("models") / "manifest.json")
         self.npu_status = detect_npu_status()
 
-        self.status_label = QLabel(self.npu_status.message)
+        self.status_label = QLabel(self._startup_message())
         self.folder_label = QLabel("No folder selected")
         self.choose_button = QPushButton("Choose Folder")
         self.scan_button = QPushButton("Scan")
@@ -1169,6 +1323,9 @@ class MainWindow(QMainWindow):
     def scan(self) -> None:
         if self.selected_folder is None:
             QMessageBox.warning(self, "No folder", "Choose a folder first.")
+            return
+        if not self.model_status.available:
+            QMessageBox.warning(self, "Models unavailable", self.model_status.message)
             return
         if not self.npu_status.available:
             QMessageBox.warning(self, "NPU unavailable", self.npu_status.message)
@@ -1215,6 +1372,13 @@ class MainWindow(QMainWindow):
             return
         results = undo_latest(self.selected_folder / "rename-log.jsonl")
         QMessageBox.information(self, "Undo complete", f"Processed {len(results)} file(s).")
+
+    def _startup_message(self) -> str:
+        if not self.model_status.available:
+            return self.model_status.message
+        if not self.npu_status.available:
+            return self.npu_status.message
+        return f"{self.model_status.message} {self.npu_status.message}"
 ```
 
 - [ ] **Step 5: Verify app import test passes**
@@ -1230,15 +1394,17 @@ git add src/offline_npu_renamer/app.py src/offline_npu_renamer/ui/main_window.py
 git commit -m "feat: add desktop rename preview UI"
 ```
 
-## Task 11: Model Manifest and Final Verification
+## Task 11: Bundled Model Manifest, Assets, and Final Verification
 
 **Files:**
-- Create: `models/manifest.example.json`
+- Create: `models/manifest.json`
+- Add: `models/document-title-v1.onnx`
+- Add: `models/image-title-v1.onnx`
 - Modify: `README.md`
 
-- [ ] **Step 1: Add model manifest example**
+- [ ] **Step 1: Add bundled model manifest**
 
-Write `models/manifest.example.json`:
+Write `models/manifest.json` after the actual model files are selected and placed in `models/`. The `sha256` values must be the real SHA-256 values computed from the bundled files:
 
 ```json
 {
@@ -1246,25 +1412,59 @@ Write `models/manifest.example.json`:
   "models": [
     {
       "id": "document-title-v1",
-      "path": "models/document-title-v1.onnx",
+      "path": "document-title-v1.onnx",
       "task": "document-title",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "required_provider": "QNNExecutionProvider"
     },
     {
       "id": "image-title-v1",
-      "path": "models/image-title-v1.onnx",
+      "path": "image-title-v1.onnx",
       "task": "image-title",
+      "sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
       "required_provider": "QNNExecutionProvider"
     }
   ]
 }
 ```
 
-- [ ] **Step 2: Expand README model note**
+- [ ] **Step 2: Add bundled model files**
+
+Place the selected offline ONNX model files at:
+
+```text
+models/document-title-v1.onnx
+models/image-title-v1.onnx
+```
+
+If the files are larger than normal Git hosting limits, track them with Git LFS before committing:
+
+```powershell
+git lfs install
+git lfs track "*.onnx"
+git add .gitattributes models/document-title-v1.onnx models/image-title-v1.onnx
+```
+
+Compute hashes and update `models/manifest.json`:
+
+```powershell
+Get-FileHash models/document-title-v1.onnx -Algorithm SHA256
+Get-FileHash models/image-title-v1.onnx -Algorithm SHA256
+```
+
+Expected: the manifest contains the exact SHA-256 value for each bundled model, replacing the illustrative hash strings from the manifest skeleton.
+
+- [ ] **Step 3: Expand README model note**
 
 Append to `README.md`:
 
 ```markdown
+
+## Bundled offline models
+
+The first version includes ONNX model files in `models/`. The app validates `models/manifest.json`, checks that every bundled model exists, and verifies each SHA-256 hash before analysis starts.
+
+The app must not download models at runtime. If a bundled model is missing, corrupted, or incompatible with the selected NPU provider, analysis is disabled.
 
 ## NPU policy
 
@@ -1273,28 +1473,28 @@ The app checks ONNX Runtime execution providers at startup. Supported NPU-backed
 If only CPU or GPU providers are available, analysis is disabled. File enumeration and parsing still use normal CPU work because Windows cannot perform filesystem and decoding operations entirely on the NPU.
 ```
 
-- [ ] **Step 3: Run the full test suite**
+- [ ] **Step 4: Run the full test suite**
 
 Run: `pytest -v`
 
 Expected: all tests PASS.
 
-- [ ] **Step 4: Run the app smoke check**
+- [ ] **Step 5: Run the app smoke check**
 
 Run: `python -m offline_npu_renamer.app`
 
-Expected: app window opens. If no supported NPU provider exists, the top status label explains that analysis is disabled.
+Expected: app window opens. If no supported NPU provider exists or bundled model validation fails, the top status label explains that analysis is disabled.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```powershell
-git add models/manifest.example.json README.md
-git commit -m "docs: document offline model manifest"
+git add models/manifest.json models/document-title-v1.onnx models/image-title-v1.onnx README.md
+git commit -m "feat: bundle offline ONNX models"
 ```
 
 ## Self-Review
 
-- Spec coverage: The plan covers folder selection, non-recursive scan, document and image support, NPU gating, preview, dated filename generation, collision suffixes, apply rename, JSON Lines log, undo, and offline model placement.
-- Intentional first-version limitation: Image content analysis uses local image metadata text until an offline OCR or vision ONNX model is supplied. The NPU gate remains strict, so the app does not perform AI inference on CPU or GPU.
-- Red-flag scan: The plan contains no placeholder markers or vague implementation-only steps.
+- Spec coverage: The plan covers folder selection, non-recursive scan, document and image support, bundled model validation, NPU gating, preview, dated filename generation, collision suffixes, apply rename, JSON Lines log, undo, and offline model packaging.
+- First-version model requirement: Document and image model files are bundled with the app distribution and verified from `models/manifest.json`. The NPU gate remains strict, so the app does not perform AI inference on CPU or GPU.
+- Red-flag scan: The plan has been checked for unresolved design contradictions.
 - Type consistency: Shared dataclasses from `core.models` are used consistently by scanner, analyzer, renamer, and UI tasks.

@@ -10,13 +10,14 @@ The first version supports documents and images. The architecture should allow a
 
 1. User opens the app.
 2. User selects a folder.
-3. App detects whether an NPU-backed inference provider is available.
-4. If NPU inference is unavailable, the app stops analysis and explains why.
-5. If NPU inference is available, the app scans supported files in the selected folder.
-6. App analyzes file content and generates rename suggestions.
-7. App shows a preview table with the original name, suggested name, date source, confidence, and reason.
-8. User confirms the selected rename operations.
-9. App renames files and writes an undoable log.
+3. App validates that bundled offline model files are present and match the expected hashes.
+4. App detects whether an NPU-backed inference provider is available.
+5. If bundled models or NPU inference are unavailable, the app stops analysis and explains why.
+6. If bundled models and NPU inference are available, the app scans supported files in the selected folder.
+7. App analyzes file content and generates rename suggestions.
+8. App shows a preview table with the original name, suggested name, date source, confidence, and reason.
+9. User confirms the selected rename operations.
+10. App renames files and writes an undoable log.
 
 ## First-Version Scope
 
@@ -41,6 +42,7 @@ Out of scope for the first version:
 - Cloud model calls or online API usage.
 - Fully automatic renaming without preview.
 - Recursive rename by default. Recursive scanning can be added as an explicit option later.
+- Runtime model downloads. First-version model files must be bundled with the app or installer.
 
 ## Recommended Technology
 
@@ -50,9 +52,10 @@ Suggested stack:
 
 - UI: PySide6 or CustomTkinter.
 - Local inference: ONNX Runtime.
-- Model format: bundled ONNX models.
+- Model format: bundled ONNX models with a checked-in manifest and packaged binary assets.
 - Document extraction: local parsers for text, Markdown, PDF, and DOCX.
-- Image extraction: local image loader plus OCR or vision model.
+- Document AI: bundled local model for title/summary generation from extracted text.
+- Image AI: bundled local OCR or vision model for image-derived rename suggestions.
 - Storage: local JSON Lines rename log.
 
 Python keeps the first version fast to build while still allowing Windows-specific NPU provider checks through ONNX Runtime.
@@ -63,14 +66,32 @@ The app should prioritize NPU and must not silently fall back to CPU or GPU for 
 
 Startup behavior:
 
-1. Inspect ONNX Runtime available execution providers.
-2. Determine whether a supported NPU-backed provider is available for the current machine.
-3. If no NPU-backed provider is available, disable content analysis and show a clear message.
-4. Do not run AI inference on CPU or GPU unless a later explicit setting is added.
+1. Load the bundled model manifest.
+2. Verify required model files exist inside the app package or installed model directory.
+3. Verify each model file hash matches the manifest.
+4. Inspect ONNX Runtime available execution providers.
+5. Determine whether a supported NPU-backed provider is available for the current machine.
+6. Verify required models can be loaded with the selected NPU-backed provider.
+7. If a bundled model is missing, hash verification fails, or no NPU-backed provider is available, disable content analysis and show a clear message.
+8. Do not run AI inference on CPU or GPU unless a later explicit setting is added.
 
 Important limitation:
 
 Some non-AI work will still use small amounts of CPU. This includes file enumeration, file reading, PDF parsing, image decoding, filename cleanup, and writing logs. The strict NPU requirement applies to AI inference.
+
+## Bundled Offline Models
+
+The first version must include offline model assets as part of the app distribution. The app must not require the user to download a model after installation.
+
+The installed app should include:
+
+- `models/manifest.json`
+- A document title or summarization ONNX model.
+- An image OCR or image understanding ONNX model.
+- SHA-256 hashes for every model file.
+- Required provider metadata for each model.
+
+If bundled model validation fails, the app must not analyze or rename files. It should display which model is missing, corrupted, or incompatible with the selected NPU provider.
 
 ## Rename Format
 
@@ -113,7 +134,7 @@ Each file is processed through a common analyzer interface:
 
 1. Detect file type.
 2. Extract content or visual text.
-3. Run local NPU-backed inference when semantic understanding is needed.
+3. Run bundled local NPU-backed inference for semantic understanding.
 4. Generate a short filename title.
 5. Detect or choose the best date.
 6. Return a rename suggestion with confidence and reason.
@@ -121,13 +142,14 @@ Each file is processed through a common analyzer interface:
 Document analyzer:
 
 - Text and Markdown: read text directly.
-- PDF: extract text locally; use OCR for image-only pages in a later version.
+- PDF: extract text locally; use the bundled image model for image-only pages when pages are rendered as images.
 - DOCX: extract paragraph text locally.
+- Use the bundled document model to produce the title/summary used in the filename.
 
 Image analyzer:
 
 - Load image locally.
-- Use local OCR or a local vision model.
+- Use the bundled local OCR or vision model.
 - Generate a title from detected text or visual content.
 
 ## Preview UI
@@ -190,6 +212,9 @@ Undo reads the latest applicable records and renames files back to their origina
 The app should show clear messages for:
 
 - No NPU-backed inference provider found.
+- Bundled model file missing.
+- Bundled model hash mismatch.
+- Bundled model cannot load on the selected NPU provider.
 - Folder cannot be read.
 - Unsupported file type.
 - File locked by another app.
@@ -219,6 +244,8 @@ Integration tests:
 Manual verification:
 
 - Start app with NPU unavailable and confirm analysis is disabled.
+- Start app with a missing bundled model and confirm analysis is disabled.
+- Start app with a hash-mismatched bundled model and confirm analysis is disabled.
 - Start app with NPU available and confirm inference uses the NPU provider.
 - Verify the app works without network access.
 
