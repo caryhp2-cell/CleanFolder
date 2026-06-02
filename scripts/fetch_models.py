@@ -42,6 +42,21 @@ MODEL_FILES = [
     },
 ]
 
+PHI_REPO_ID = "microsoft/Phi-3.5-mini-instruct-onnx"
+PHI_SOURCE_SUBDIR = "gpu/gpu-int4-awq-block-128"
+PHI_TARGET_DIR = Path("phi-3.5-mini-instruct-onnx") / PHI_SOURCE_SUBDIR
+PHI_REQUIRED_FILES = [
+    "chat_template.jinja",
+    "config.json",
+    "configuration_phi3.py",
+    "genai_config.json",
+    "model.onnx",
+    "model.onnx.data",
+    "special_tokens_map.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+]
+
 
 def main() -> None:
     MODELS.mkdir(exist_ok=True)
@@ -66,6 +81,39 @@ def main() -> None:
                 "source_file": item["filename"],
             }
         )
+
+    phi_target_dir = MODELS / PHI_TARGET_DIR
+    phi_target_dir.mkdir(parents=True, exist_ok=True)
+    required_files = []
+    for filename in PHI_REQUIRED_FILES:
+        source_file = f"{PHI_SOURCE_SUBDIR}/{filename}"
+        downloaded = Path(
+            hf_hub_download(
+                repo_id=PHI_REPO_ID,
+                filename=source_file,
+            )
+        )
+        target = phi_target_dir / filename
+        shutil.copyfile(downloaded, target)
+        required_files.append(
+            {
+                "path": filename,
+                "sha256": sha256_file(target),
+            }
+        )
+
+    manifest_models.append(
+        {
+            "id": "article-llm-phi35-mini-directml-v1",
+            "path": PHI_TARGET_DIR.as_posix(),
+            "task": "article-llm-analysis",
+            "required_provider": "DmlExecutionProvider",
+            "source_repo": PHI_REPO_ID,
+            "source_revision": "main",
+            "source_subdir": PHI_SOURCE_SUBDIR,
+            "required_files": required_files,
+        }
+    )
 
     manifest = {
         "version": 1,
