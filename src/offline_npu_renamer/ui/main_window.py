@@ -186,18 +186,12 @@ class MainWindow(QMainWindow):
         if self.article_path is None:
             QMessageBox.warning(self, "No article", "Choose an article first.")
             return
-        if not self.model_status.available:
-            QMessageBox.warning(self, "Models unavailable", self.model_status.message)
-            return
-        if not self.npu_status.available:
-            QMessageBox.warning(self, "NPU unavailable", self.npu_status.message)
-            return
         try:
             content = extract_document_content(self.article_path)
         except Exception as error:
             QMessageBox.warning(self, "Article read failed", str(error))
             return
-        result = analyze_article_text(content.text, self.model_status, self.npu_status)
+        result = analyze_article_text(content.text)
         if result.status is SuggestionStatus.ERROR:
             QMessageBox.warning(self, "Analysis failed", result.reason)
             return
@@ -208,6 +202,8 @@ class MainWindow(QMainWindow):
             f"{result.summary}\n\n"
             "Key sentences:\n"
             + "\n".join(f"- {sentence}" for sentence in result.key_sentences)
+            + "\n\nReason:\n"
+            + result.reason
         )
 
     def _startup_message(self) -> str:
