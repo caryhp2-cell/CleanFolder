@@ -1,0 +1,807 @@
+<?xml version="1.0"?>
+<net name="tokenizer" version="11">
+	<layers>
+		<layer id="0" name="Parameter_104938" type="Parameter" version="opset1">
+			<data shape="?" element_type="string" />
+			<output>
+				<port id="0" precision="STRING" names="Parameter_104938">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="1" name="Constant_104944" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="0" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="2" name="StringTensorUnpack_104939" type="StringTensorUnpack" version="extension">
+			<data mode="begins_ends" />
+			<input>
+				<port id="0" precision="STRING">
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="U8">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="3" name="ShapeOf_104940" type="ShapeOf" version="opset3">
+			<data output_type="i64" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I64">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="4" name="Constant_104941" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="0" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="5" name="Constant_104942" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="0" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="6" name="Gather_104943" type="Gather" version="opset8">
+			<data batch_dims="0" />
+			<input>
+				<port id="0" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="I64" />
+				<port id="2" precision="I64" />
+			</input>
+			<output>
+				<port id="3" precision="I64" />
+			</output>
+		</layer>
+		<layer id="7" name="Constant_104945" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="8" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="8" name="Range_104946" type="Range" version="opset4">
+			<data output_type="i32" />
+			<input>
+				<port id="0" precision="I64" />
+				<port id="1" precision="I64" />
+				<port id="2" precision="I64" />
+			</input>
+			<output>
+				<port id="3" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="9" name="Constant_104947" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="8" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="10" name="Constant_104948" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="8" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="11" name="Add_104949" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="I64" />
+				<port id="1" precision="I64" />
+			</input>
+			<output>
+				<port id="2" precision="I64" />
+			</output>
+		</layer>
+		<layer id="12" name="Constant_104950" type="Const" version="opset1">
+			<data element_type="i64" shape="" offset="8" size="8" />
+			<output>
+				<port id="0" precision="I64" />
+			</output>
+		</layer>
+		<layer id="13" name="Range_104951" type="Range" version="opset4">
+			<data output_type="i32" />
+			<input>
+				<port id="0" precision="I64" />
+				<port id="1" precision="I64" />
+				<port id="2" precision="I64" />
+			</input>
+			<output>
+				<port id="3" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="14" name="Constant_105013" type="Const" version="opset1">
+			<data element_type="u8" shape="328" offset="16" size="328" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>328</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="15" name="SpecialTokensSplit_105014" type="SpecialTokensSplit" version="extension">
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="4" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="5" precision="U8">
+					<dim>328</dim>
+				</port>
+			</input>
+			<output>
+				<port id="6" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="7" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="8" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="9" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="10" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="11" precision="BOOL">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="16" name="Constant_105016" type="Const" version="opset1">
+			<data element_type="u8" shape="7" offset="344" size="7" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>7</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="17" name="Constant_105018" type="Const" version="opset1">
+			<data element_type="u8" shape="5" offset="351" size="5" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>5</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="18" name="RegexNormalization_105019" type="RegexNormalization" version="extension">
+			<data global_replace="true" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="BOOL">
+					<dim>-1</dim>
+				</port>
+				<port id="4" precision="U8">
+					<dim>7</dim>
+				</port>
+				<port id="5" precision="U8">
+					<dim>5</dim>
+				</port>
+			</input>
+			<output>
+				<port id="6" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="7" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="8" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="9" precision="BOOL">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="19" name="Constant_105021" type="Const" version="opset1">
+			<data element_type="u8" shape="1" offset="356" size="1" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="20" name="Constant_105023" type="Const" version="opset1">
+			<data element_type="u8" shape="3" offset="357" size="3" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="21" name="RegexNormalization_105024" type="RegexNormalization" version="extension">
+			<data global_replace="true" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="BOOL">
+					<dim>-1</dim>
+				</port>
+				<port id="4" precision="U8">
+					<dim>1</dim>
+				</port>
+				<port id="5" precision="U8">
+					<dim>3</dim>
+				</port>
+			</input>
+			<output>
+				<port id="6" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="7" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="8" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="9" precision="BOOL">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="22" name="Constant_105026" type="Const" version="opset1">
+			<data element_type="u8" shape="339140" offset="360" size="339140" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>339140</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="23" name="StringTensorUnpack_105027" type="StringTensorUnpack" version="extension">
+			<data mode="begins_ends" />
+			<input>
+				<port id="0" precision="U8">
+					<dim>339140</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="U8">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="24" name="Constant_105032" type="Const" version="opset1">
+			<data element_type="u8" shape="499127" offset="339500" size="499127" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>499127</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="25" name="StringTensorUnpack_105033" type="StringTensorUnpack" version="extension">
+			<data mode="begins_ends" />
+			<input>
+				<port id="0" precision="U8">
+					<dim>499127</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="U8">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="26" name="Constant_105035" type="Const" version="opset1">
+			<data element_type="u8" shape="412810" offset="838627" size="412810" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>412810</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="27" name="StringTensorUnpack_105036" type="StringTensorUnpack" version="extension">
+			<data mode="begins_ends" />
+			<input>
+				<port id="0" precision="U8">
+					<dim>412810</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="U8">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="28" name="Constant_105029" type="Const" version="opset1">
+			<data element_type="u8" shape="8716" offset="1251437" size="8716" />
+			<output>
+				<port id="0" precision="U8">
+					<dim>8716</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="29" name="StringTensorUnpack_105030" type="StringTensorUnpack" version="extension">
+			<data mode="begins_ends" />
+			<input>
+				<port id="0" precision="U8">
+					<dim>8716</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="U8">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="30" name="Constant_105037" type="Const" version="opset1">
+			<data element_type="i32" shape="475" offset="1260153" size="1900" />
+			<output>
+				<port id="0" precision="I32">
+					<dim>475</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="31" name="BPETokenizer_105038" type="BPETokenizer" version="extension">
+			<data unk_token="&lt;unk>" fuse_unk="true" suffix_indicator="" end_suffix="" byte_fallback="true" cache_capacity="20000" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="4" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="5" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="6" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="7" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="8" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="9" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="10" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="11" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="12" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="13" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="14" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="15" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="16" precision="U8">
+					<dim>-1</dim>
+				</port>
+				<port id="17" precision="I32">
+					<dim>475</dim>
+				</port>
+			</input>
+			<output>
+				<port id="18" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="19" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="20" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="32" name="Subtract_105039" type="Subtract" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="33" name="Constant_105040" type="Const" version="opset1">
+			<data element_type="i32" shape="" offset="1262053" size="4" />
+			<output>
+				<port id="0" precision="I32" />
+			</output>
+		</layer>
+		<layer id="34" name="Minimum_105041" type="Minimum" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32" />
+			</input>
+			<output>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="35" name="Subtract_105042" type="Subtract" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="36" name="Constant_105043" type="Const" version="opset1">
+			<data element_type="i32" shape="1" offset="1262057" size="4" />
+			<output>
+				<port id="0" precision="I32">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="37" name="CombineSegments_105044" type="CombineSegments" version="extension">
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="I32">
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="4" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="5" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="6" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="7" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="8" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="9" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="38" name="Subtract_105045" type="Subtract" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="39" name="Constant_105046" type="Const" version="opset1">
+			<data element_type="i32" shape="" offset="1262057" size="4" />
+			<output>
+				<port id="0" precision="I32" />
+			</output>
+		</layer>
+		<layer id="40" name="ReduceMax_105047" type="ReduceMax" version="opset1">
+			<data keep_dims="false" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32" />
+			</input>
+			<output>
+				<port id="2" precision="I32" />
+			</output>
+		</layer>
+		<layer id="41" name="Constant_105048" type="Const" version="opset1">
+			<data element_type="i32" shape="" offset="1262061" size="4" />
+			<output>
+				<port id="0" precision="I32" />
+			</output>
+		</layer>
+		<layer id="42" name="RaggedToDense_105049" type="RaggedToDense" version="extension">
+			<data pad_right="false" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="2" precision="I32">
+					<dim>-1</dim>
+				</port>
+				<port id="3" precision="I32" />
+				<port id="4" precision="I32" />
+			</input>
+			<output>
+				<port id="5" precision="I32">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+				<port id="6" precision="BOOL">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="43" name="Convert_105050" type="Convert" version="opset1">
+			<data destination_type="i32" />
+			<input>
+				<port id="0" precision="BOOL">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I32">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="44" name="Convert_105050" type="Convert" version="opset1">
+			<data destination_type="i64" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I64" names="attention_mask">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="46" name="RaggedToDense_105049.0" type="Convert" version="opset1">
+			<data destination_type="i64" />
+			<input>
+				<port id="0" precision="I32">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="I64" names="input_ids">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="47" name="Result_105053" type="Result" version="opset1">
+			<input>
+				<port id="0" precision="I64">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</input>
+		</layer>
+		<layer id="45" name="Result_105055" type="Result" version="opset1">
+			<input>
+				<port id="0" precision="I64">
+					<dim>-1</dim>
+					<dim>-1</dim>
+				</port>
+			</input>
+		</layer>
+	</layers>
+	<edges>
+		<edge from-layer="0" from-port="0" to-layer="2" to-port="0" />
+		<edge from-layer="1" from-port="0" to-layer="8" to-port="0" />
+		<edge from-layer="2" from-port="1" to-layer="3" to-port="0" />
+		<edge from-layer="2" from-port="3" to-layer="15" to-port="4" />
+		<edge from-layer="2" from-port="2" to-layer="15" to-port="3" />
+		<edge from-layer="2" from-port="1" to-layer="15" to-port="2" />
+		<edge from-layer="3" from-port="1" to-layer="6" to-port="0" />
+		<edge from-layer="4" from-port="0" to-layer="6" to-port="1" />
+		<edge from-layer="5" from-port="0" to-layer="6" to-port="2" />
+		<edge from-layer="6" from-port="3" to-layer="8" to-port="1" />
+		<edge from-layer="6" from-port="3" to-layer="11" to-port="0" />
+		<edge from-layer="7" from-port="0" to-layer="8" to-port="2" />
+		<edge from-layer="8" from-port="3" to-layer="15" to-port="0" />
+		<edge from-layer="9" from-port="0" to-layer="13" to-port="0" />
+		<edge from-layer="10" from-port="0" to-layer="11" to-port="1" />
+		<edge from-layer="11" from-port="2" to-layer="13" to-port="1" />
+		<edge from-layer="12" from-port="0" to-layer="13" to-port="2" />
+		<edge from-layer="13" from-port="3" to-layer="15" to-port="1" />
+		<edge from-layer="14" from-port="0" to-layer="15" to-port="5" />
+		<edge from-layer="15" from-port="9" to-layer="18" to-port="1" />
+		<edge from-layer="15" from-port="6" to-layer="31" to-port="0" />
+		<edge from-layer="15" from-port="7" to-layer="31" to-port="1" />
+		<edge from-layer="15" from-port="11" to-layer="18" to-port="3" />
+		<edge from-layer="15" from-port="10" to-layer="18" to-port="2" />
+		<edge from-layer="15" from-port="8" to-layer="18" to-port="0" />
+		<edge from-layer="16" from-port="0" to-layer="18" to-port="4" />
+		<edge from-layer="17" from-port="0" to-layer="18" to-port="5" />
+		<edge from-layer="18" from-port="6" to-layer="21" to-port="0" />
+		<edge from-layer="18" from-port="7" to-layer="21" to-port="1" />
+		<edge from-layer="18" from-port="8" to-layer="21" to-port="2" />
+		<edge from-layer="18" from-port="9" to-layer="21" to-port="3" />
+		<edge from-layer="19" from-port="0" to-layer="21" to-port="4" />
+		<edge from-layer="20" from-port="0" to-layer="21" to-port="5" />
+		<edge from-layer="21" from-port="8" to-layer="31" to-port="4" />
+		<edge from-layer="21" from-port="7" to-layer="31" to-port="3" />
+		<edge from-layer="21" from-port="6" to-layer="31" to-port="2" />
+		<edge from-layer="22" from-port="0" to-layer="23" to-port="0" />
+		<edge from-layer="23" from-port="1" to-layer="31" to-port="5" />
+		<edge from-layer="23" from-port="2" to-layer="31" to-port="6" />
+		<edge from-layer="23" from-port="3" to-layer="31" to-port="7" />
+		<edge from-layer="24" from-port="0" to-layer="25" to-port="0" />
+		<edge from-layer="25" from-port="1" to-layer="31" to-port="8" />
+		<edge from-layer="25" from-port="2" to-layer="31" to-port="9" />
+		<edge from-layer="25" from-port="3" to-layer="31" to-port="10" />
+		<edge from-layer="26" from-port="0" to-layer="27" to-port="0" />
+		<edge from-layer="27" from-port="3" to-layer="31" to-port="13" />
+		<edge from-layer="27" from-port="2" to-layer="31" to-port="12" />
+		<edge from-layer="27" from-port="1" to-layer="31" to-port="11" />
+		<edge from-layer="28" from-port="0" to-layer="29" to-port="0" />
+		<edge from-layer="29" from-port="1" to-layer="31" to-port="14" />
+		<edge from-layer="29" from-port="2" to-layer="31" to-port="15" />
+		<edge from-layer="29" from-port="3" to-layer="31" to-port="16" />
+		<edge from-layer="30" from-port="0" to-layer="31" to-port="17" />
+		<edge from-layer="31" from-port="19" to-layer="32" to-port="0" />
+		<edge from-layer="31" from-port="18" to-layer="32" to-port="1" />
+		<edge from-layer="31" from-port="19" to-layer="35" to-port="0" />
+		<edge from-layer="31" from-port="20" to-layer="37" to-port="2" />
+		<edge from-layer="31" from-port="19" to-layer="37" to-port="1" />
+		<edge from-layer="32" from-port="2" to-layer="34" to-port="0" />
+		<edge from-layer="33" from-port="0" to-layer="34" to-port="1" />
+		<edge from-layer="34" from-port="2" to-layer="35" to-port="1" />
+		<edge from-layer="35" from-port="2" to-layer="37" to-port="0" />
+		<edge from-layer="36" from-port="0" to-layer="37" to-port="3" />
+		<edge from-layer="37" from-port="5" to-layer="42" to-port="1" />
+		<edge from-layer="37" from-port="6" to-layer="42" to-port="2" />
+		<edge from-layer="37" from-port="4" to-layer="42" to-port="0" />
+		<edge from-layer="37" from-port="4" to-layer="38" to-port="1" />
+		<edge from-layer="37" from-port="5" to-layer="38" to-port="0" />
+		<edge from-layer="38" from-port="2" to-layer="40" to-port="0" />
+		<edge from-layer="39" from-port="0" to-layer="40" to-port="1" />
+		<edge from-layer="40" from-port="2" to-layer="42" to-port="3" />
+		<edge from-layer="41" from-port="0" to-layer="42" to-port="4" />
+		<edge from-layer="42" from-port="6" to-layer="43" to-port="0" />
+		<edge from-layer="42" from-port="5" to-layer="46" to-port="0" />
+		<edge from-layer="43" from-port="1" to-layer="44" to-port="0" />
+		<edge from-layer="44" from-port="1" to-layer="45" to-port="0" />
+		<edge from-layer="46" from-port="1" to-layer="47" to-port="0" />
+	</edges>
+	<rt_info>
+		<add_attention_mask value="True" />
+		<add_prefix_space />
+		<add_special_tokens value="True" />
+		<bos_token_id value="1" />
+		<chat_template value="{% for message in messages %}{% if message['role'] == 'system' and message['content'] %}{{'&lt;|system|>&#10;' + message['content'] + '&lt;|end|>&#10;'}}{% elif message['role'] == 'user' %}{{'&lt;|user|>&#10;' + message['content'] + '&lt;|end|>&#10;'}}{% elif message['role'] == 'assistant' %}{{'&lt;|assistant|>&#10;' + message['content'] + '&lt;|end|>&#10;'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '&lt;|assistant|>&#10;' }}{% else %}{{ eos_token }}{% endif %}" />
+		<clean_up_tokenization_spaces />
+		<detokenizer_input_type value="i64" />
+		<eos_token_id value="32000" />
+		<handle_special_tokens_with_re />
+		<number_of_inputs value="1" />
+		<openvino_tokenizers_version value="2024.5.0.0" />
+		<openvino_version value="2024.5.0" />
+		<original_tokenizer_class value="&lt;class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>" />
+		<pad_token_id value="32000" />
+		<sentencepiece_version value="0.2.0" />
+		<skip_special_tokens value="True" />
+		<streaming_detokenizer value="False" />
+		<tiktoken_version value="0.8.0" />
+		<tokenizer_output_type value="i64" />
+		<tokenizers_version value="0.20.3" />
+		<transformers_version value="4.46.3" />
+		<use_max_padding value="False" />
+		<use_sentencepiece_backend value="False" />
+		<utf8_replace_mode />
+		<with_detokenizer value="True" />
+	</rt_info>
+</net>

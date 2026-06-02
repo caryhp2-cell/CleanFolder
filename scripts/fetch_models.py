@@ -4,7 +4,7 @@ import json
 import shutil
 from pathlib import Path
 
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download
 
 from offline_npu_renamer.core.model_assets import sha256_file
 
@@ -42,18 +42,22 @@ MODEL_FILES = [
     },
 ]
 
-PHI_REPO_ID = "microsoft/Phi-3.5-mini-instruct-onnx"
-PHI_SOURCE_SUBDIR = "gpu/gpu-int4-awq-block-128"
-PHI_TARGET_DIR = Path("phi-3.5-mini-instruct-onnx") / PHI_SOURCE_SUBDIR
+PHI_REPO_ID = "OpenVINO/Phi-3.5-mini-instruct-int4-ov"
+PHI_TARGET_DIR = Path("openvino") / "Phi-3.5-mini-instruct-int4-ov"
 PHI_REQUIRED_FILES = [
-    "chat_template.jinja",
+    "added_tokens.json",
     "config.json",
     "configuration_phi3.py",
-    "genai_config.json",
-    "model.onnx",
-    "model.onnx.data",
+    "generation_config.json",
+    "openvino_detokenizer.bin",
+    "openvino_detokenizer.xml",
+    "openvino_model.bin",
+    "openvino_model.xml",
+    "openvino_tokenizer.bin",
+    "openvino_tokenizer.xml",
     "special_tokens_map.json",
     "tokenizer.json",
+    "tokenizer.model",
     "tokenizer_config.json",
 ]
 
@@ -84,17 +88,14 @@ def main() -> None:
 
     phi_target_dir = MODELS / PHI_TARGET_DIR
     phi_target_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_download(
+        repo_id=PHI_REPO_ID,
+        local_dir=phi_target_dir,
+        allow_patterns=PHI_REQUIRED_FILES,
+    )
     required_files = []
     for filename in PHI_REQUIRED_FILES:
-        source_file = f"{PHI_SOURCE_SUBDIR}/{filename}"
-        downloaded = Path(
-            hf_hub_download(
-                repo_id=PHI_REPO_ID,
-                filename=source_file,
-            )
-        )
         target = phi_target_dir / filename
-        shutil.copyfile(downloaded, target)
         required_files.append(
             {
                 "path": filename,
@@ -104,13 +105,12 @@ def main() -> None:
 
     manifest_models.append(
         {
-            "id": "article-llm-phi35-mini-directml-v1",
+            "id": "article-llm-phi35-mini-openvino-gpu-v1",
             "path": PHI_TARGET_DIR.as_posix(),
             "task": "article-llm-analysis",
-            "required_provider": "DmlExecutionProvider",
+            "required_provider": "GPU",
             "source_repo": PHI_REPO_ID,
             "source_revision": "main",
-            "source_subdir": PHI_SOURCE_SUBDIR,
             "required_files": required_files,
         }
     )

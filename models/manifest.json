@@ -36,6 +36,72 @@
       "required_provider": "OpenVINOExecutionProvider",
       "source_repo": "SWHL/RapidOCR",
       "source_file": "PP-OCRv4/ch_PP-OCRv4_rec_infer.onnx"
+    },
+    {
+      "id": "article-llm-phi35-mini-openvino-gpu-v1",
+      "path": "openvino/Phi-3.5-mini-instruct-int4-ov",
+      "task": "article-llm-analysis",
+      "required_provider": "GPU",
+      "source_repo": "OpenVINO/Phi-3.5-mini-instruct-int4-ov",
+      "source_revision": "main",
+      "required_files": [
+        {
+          "path": "added_tokens.json",
+          "sha256": "5f5c94d30901fe9c961d776d51eadbda4454991a77b53d36e0be0571a8e72a7d"
+        },
+        {
+          "path": "config.json",
+          "sha256": "a44acd40805d0aab1c579d79ce6c193c299dff38cd7fcc1b555f1f8aafac2e8d"
+        },
+        {
+          "path": "configuration_phi3.py",
+          "sha256": "d25f57c0823fcb9753880a25e79ab562b039d6187102ac13e4ff26dd11e9a81c"
+        },
+        {
+          "path": "generation_config.json",
+          "sha256": "3ac170811e755ca7f1d2eb56dc38a6c6a982b20cc3fbada0bdabadbe78163e9c"
+        },
+        {
+          "path": "openvino_detokenizer.bin",
+          "sha256": "8a8b1249fca76cc50137fe1d8957952033bed6d18ceedfe497ea46e1b5f69efc"
+        },
+        {
+          "path": "openvino_detokenizer.xml",
+          "sha256": "4b42b3152d3276f6ca352b17c86869aaf633b433915de61148bf09073affc875"
+        },
+        {
+          "path": "openvino_model.bin",
+          "sha256": "aebe78ddb3bb1cb492720bc2c8b1e8120202307428390d3424ee3ca75166eeca"
+        },
+        {
+          "path": "openvino_model.xml",
+          "sha256": "6e57459b7b07150419d91ceedc93058d0900db4296ea9e04f8a40970f70346f9"
+        },
+        {
+          "path": "openvino_tokenizer.bin",
+          "sha256": "22c222c383dac6ccc43b495af24d81193b461af6f9c9d3c256aef2b0f2a26175"
+        },
+        {
+          "path": "openvino_tokenizer.xml",
+          "sha256": "7698f617d1a4afd2e654b5ecb62367ad60883f1521955d878388106dfa05cc2d"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "sha256": "474d699677e264edd3851559548cbbb61801ad8da6b249c81455007602313c34"
+        },
+        {
+          "path": "tokenizer.json",
+          "sha256": "3cb815b904d82b82b25dcd90edd00e71a5ee5443472ad611bcb84f1339300647"
+        },
+        {
+          "path": "tokenizer.model",
+          "sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "sha256": "a12badd3fb56adb29bc7cfe03cf6fa7e3e19dd3d7602b85ce6ed63d424f5f222"
+        }
+      ]
     }
   ],
   "npu_policy": {

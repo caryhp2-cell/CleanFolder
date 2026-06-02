@@ -73,10 +73,10 @@ def test_validate_model_assets_accepts_directory_model_required_files(tmp_path):
                 "version": 1,
                 "models": [
                     {
-                        "id": "article-llm-phi35-mini-directml-v1",
+                        "id": "article-llm-phi35-mini-openvino-gpu-v1",
                         "path": "phi/gpu",
                         "task": "article-llm-analysis",
-                        "required_provider": "DmlExecutionProvider",
+                        "required_provider": "GPU",
                         "required_files": [
                             {
                                 "path": "genai_config.json",
@@ -97,4 +97,4 @@ def test_validate_model_assets_accepts_directory_model_required_files(tmp_path):
     status = validate_model_assets(manifest_path)
 
     assert status.available is True
-    assert status.model_ids == ("article-llm-phi35-mini-directml-v1",)
+    assert status.model_ids == ("article-llm-phi35-mini-openvino-gpu-v1",)

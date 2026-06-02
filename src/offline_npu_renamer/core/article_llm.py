@@ -1,76 +1,47 @@
 from __future__ import annotations
 
-import json
+import re
 from pathlib import Path
 
 from offline_npu_renamer.core.model_assets import default_models_dir, load_manifest
 
 ARTICLE_LLM_TASK = "article-llm-analysis"
-DIRECTML_PROVIDER = "DmlExecutionProvider"
-GENAI_DIRECTML_PROVIDER = "dml"
+OPENVINO_GPU_DEVICE = "GPU"
 
 
 class PhiArticleGenerator:
     def __init__(
         self,
         models_dir: Path | None = None,
+        device: str = OPENVINO_GPU_DEVICE,
         max_article_chars: int = 12000,
-        max_new_tokens: int = 700,
+        max_new_tokens: int = 260,
     ) -> None:
         self.models_dir = models_dir or default_models_dir()
+        self.device = device
         self.max_article_chars = max_article_chars
         self.max_new_tokens = max_new_tokens
-        self._model: object | None = None
-        self._tokenizer: object | None = None
+        self._pipeline: object | None = None
 
     def generate(self, text: str) -> str:
-        self._ensure_directml_available()
-        model, tokenizer, og = self._load_model()
+        pipeline = self._load_pipeline()
         prompt = _build_article_prompt(text[: self.max_article_chars])
-        input_message = [{"role": "user", "content": prompt}]
-        input_prompt = tokenizer.apply_chat_template(
-            json.dumps(input_message),
-            add_generation_prompt=True,
-        )
-        input_tokens = tokenizer.encode(input_prompt)
-        params = og.GeneratorParams(model)
-        params.set_search_options(
-            do_sample=False,
-            max_length=len(input_tokens) + self.max_new_tokens,
-            temperature=0.0,
-        )
-        generator = og.Generator(model, params)
-        generator.append_tokens(input_tokens)
-        stream = tokenizer.create_stream()
-        output: list[str] = []
-        while not generator.is_done():
-            generator.generate_next_token()
-            output.append(stream.decode(generator.get_next_tokens()[0]))
-        return "".join(output).strip()
+        return str(
+            pipeline.generate(
+                prompt,
+                max_new_tokens=self.max_new_tokens,
+            )
+        ).strip()
 
-    def _load_model(self) -> tuple[object, object, object]:
-        if self._model is not None and self._tokenizer is not None:
-            import onnxruntime_genai as og
+    def _load_pipeline(self) -> object:
+        if self._pipeline is not None:
+            return self._pipeline
 
-            return self._model, self._tokenizer, og
-
-        import onnxruntime_genai as og
+        import openvino_genai as ov_genai
 
         model_dir = _article_model_dir(self.models_dir)
-        config = og.Config(str(model_dir))
-        config.clear_providers()
-        config.append_provider(GENAI_DIRECTML_PROVIDER)
-        self._model = og.Model(config)
-        self._tokenizer = og.Tokenizer(self._model)
-        return self._model, self._tokenizer, og
-
-    def _ensure_directml_available(self) -> None:
-        import onnxruntime as ort
-
-        providers = tuple(ort.get_available_providers())
-        if DIRECTML_PROVIDER not in providers:
-            joined = ", ".join(providers) if providers else "none"
-            raise RuntimeError(f"DirectML provider unavailable. Available providers: {joined}")
+        self._pipeline = ov_genai.LLMPipeline(str(model_dir), self.device)
+        return self._pipeline
 
 
 def _article_model_dir(models_dir: Path) -> Path:
@@ -87,16 +58,26 @@ def _article_model_dir(models_dir: Path) -> Path:
 
 
 def _build_article_prompt(article_text: str) -> str:
+    source_sentences = _split_source_sentences(article_text)
+    sentence_list = "\n".join(f"{index + 1}. {sentence}" for index, sentence in enumerate(source_sentences))
     return (
-        "Analyze the article below. Return JSON only, without Markdown fences. "
-        "Do not invent facts. Keep the title short. Write the summary from the article only. "
-        "Copy each key sentence exactly from the article text.\n\n"
-        "Return this JSON shape:\n"
-        "{\n"
-        '  "suggested_title": "short article title",\n'
-        '  "summary": "3 to 5 sentence summary",\n'
-        '  "key_sentences": ["important sentence copied from the article"],\n'
-        '  "reason": "brief explanation of why these points matter"\n'
-        "}\n\n"
+        "You are a strict JSON API. Return JSON only. Return exactly one valid JSON object. "
+        "Stop immediately after the closing brace. Do not write Markdown. "
+        "Do not write explanations outside JSON.\n\n"
+        "The JSON object must have this exact shape:\n"
+        '{"suggested_title":"...","summary":"...","key_sentences":["..."],"reason":"..."}'
+        "\n\n"
+        "Rules:\n"
+        "- summary must be based only on the article\n"
+        "- key_sentences must be copied exactly from the numbered source sentences below\n"
+        "- no extra keys\n\n"
+        "Numbered source sentences:\n"
+        f"{sentence_list}\n\n"
         f"Article:\n{article_text}"
     )
+
+
+def _split_source_sentences(article_text: str) -> list[str]:
+    compact = " ".join(article_text.split())
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?。！？])\s+", compact) if part.strip()]
+    return sentences or [compact]

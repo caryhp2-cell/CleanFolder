@@ -8,8 +8,8 @@ def test_app_entrypoint_imports():
 
 
 def test_app_import_does_not_load_genai_runtime():
-    sys.modules.pop("onnxruntime_genai", None)
+    sys.modules.pop("openvino_genai", None)
 
     import offline_npu_renamer.app  # noqa: F401
 
-    assert "onnxruntime_genai" not in sys.modules
+    assert "openvino_genai" not in sys.modules
