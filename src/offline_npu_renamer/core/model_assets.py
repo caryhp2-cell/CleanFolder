@@ -13,12 +13,19 @@ from offline_npu_renamer.core.models import ModelAssetStatus, NpuStatus
 
 
 @dataclass(frozen=True)
+class ModelFileSpec:
+    path: Path
+    sha256: str
+
+
+@dataclass(frozen=True)
 class ModelSpec:
     id: str
     path: Path
     task: str
-    sha256: str
+    sha256: str | None
     required_provider: str
+    required_files: tuple[ModelFileSpec, ...] = ()
 
 
 _DLL_DIRECTORY_HANDLES: list[object] = []
@@ -34,13 +41,21 @@ def load_manifest(manifest_path: Path | None = None) -> list[ModelSpec]:
     root = path.parent
     specs: list[ModelSpec] = []
     for item in manifest.get("models", []):
+        model_path = (root / str(item["path"])).resolve()
         specs.append(
             ModelSpec(
                 id=str(item["id"]),
-                path=(root / str(item["path"])).resolve(),
+                path=model_path,
                 task=str(item["task"]),
-                sha256=str(item["sha256"]).lower(),
+                sha256=str(item["sha256"]).lower() if "sha256" in item else None,
                 required_provider=str(item["required_provider"]),
+                required_files=tuple(
+                    ModelFileSpec(
+                        path=(model_path / str(file_item["path"])).resolve(),
+                        sha256=str(file_item["sha256"]).lower(),
+                    )
+                    for file_item in item.get("required_files", [])
+                ),
             )
         )
     return specs
@@ -62,11 +77,23 @@ def validate_model_assets(manifest_path: Path | None = None) -> ModelAssetStatus
     seen: list[str] = []
     for spec in specs:
         seen.append(spec.id)
-        if not spec.path.exists():
-            return ModelAssetStatus(False, f"Missing bundled model: {spec.id}", tuple(seen))
-        actual_hash = sha256_file(spec.path)
-        if actual_hash != spec.sha256:
-            return ModelAssetStatus(False, f"Bundled model hash mismatch for {spec.id}", tuple(seen))
+        if spec.required_files:
+            if not spec.path.exists() or not spec.path.is_dir():
+                return ModelAssetStatus(False, f"Missing bundled model directory: {spec.id}", tuple(seen))
+            for file_spec in spec.required_files:
+                if not file_spec.path.exists():
+                    return ModelAssetStatus(False, f"Missing bundled model file: {spec.id}", tuple(seen))
+                actual_hash = sha256_file(file_spec.path)
+                if actual_hash != file_spec.sha256:
+                    return ModelAssetStatus(False, f"Bundled model hash mismatch for {spec.id}", tuple(seen))
+        else:
+            if spec.sha256 is None:
+                return ModelAssetStatus(False, f"Bundled model manifest missing hash for {spec.id}", tuple(seen))
+            if not spec.path.exists():
+                return ModelAssetStatus(False, f"Missing bundled model: {spec.id}", tuple(seen))
+            actual_hash = sha256_file(spec.path)
+            if actual_hash != spec.sha256:
+                return ModelAssetStatus(False, f"Bundled model hash mismatch for {spec.id}", tuple(seen))
 
     return ModelAssetStatus(True, "Bundled offline models validated.", tuple(seen))
 
@@ -85,6 +112,8 @@ def validate_model_sessions(npu_status: NpuStatus, manifest_path: Path | None = 
         list(npu_status.provider_options) if npu_status.provider_options else None
     )
     for spec in load_manifest(manifest_path or default_models_dir() / "manifest.json"):
+        if spec.required_files:
+            continue
         try:
             session = ort.InferenceSession(
                 str(spec.path),
