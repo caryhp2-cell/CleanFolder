@@ -34,6 +34,9 @@ def test_phi_article_generator_uses_openvino_genai_gpu_pipeline(tmp_path, monkey
 
         def generate(self, prompt: str, max_new_tokens: int) -> str:
             assert "Return JSON only" in prompt
+            assert "summary <= 80 characters" in prompt
+            assert "reason <= 40 characters" in prompt
+            assert "exactly 2 key_sentences" in prompt
             assert max_new_tokens == 123
             return '{"suggested_title":"ok","summary":"ok","key_sentences":["ok"],"reason":"ok"}'
 

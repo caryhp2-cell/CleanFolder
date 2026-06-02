@@ -36,7 +36,7 @@ def analyze_article_text(
         return _blocked(f"Article LLM generation failed: {error}")
 
     try:
-        payload = json.loads(_strip_markdown_fences(raw_output))
+        payload = json.loads(_extract_first_json_object(_strip_markdown_fences(raw_output)))
     except json.JSONDecodeError:
         return _blocked("Article LLM output was not valid JSON.")
 
@@ -53,14 +53,6 @@ def _validate_payload(payload: Any, article_text: str) -> ArticleAnalysisResult:
     if not isinstance(payload, dict):
         return _blocked("Article LLM output must be a JSON object.")
 
-    title = _required_string(payload, "suggested_title")
-    if title is None:
-        return _blocked("Article LLM output is missing suggested_title.")
-
-    summary = _required_string(payload, "summary")
-    if summary is None:
-        return _blocked("Article LLM output is missing summary.")
-
     key_sentences = payload.get("key_sentences")
     if not isinstance(key_sentences, list) or not key_sentences:
         return _blocked("Article LLM output is missing key_sentences.")
@@ -74,9 +66,11 @@ def _validate_payload(payload: Any, article_text: str) -> ArticleAnalysisResult:
             return _blocked(f"Article LLM key sentence was not found in the article: {sentence}")
         validated_sentences.append(sentence)
 
+    title = _required_string(payload, "suggested_title") or _suggest_title_from_article(article_text)
+    summary = _required_string(payload, "summary") or " ".join(validated_sentences)
     reason = payload.get("reason")
     if not isinstance(reason, str):
-        reason = ""
+        reason = "Repaired partial local LLM output using selected key sentences."
 
     return ArticleAnalysisResult(
         suggested_title=title,
@@ -92,6 +86,11 @@ def _required_string(payload: dict[str, Any], key: str) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     return value.strip()
+
+
+def _suggest_title_from_article(article_text: str, max_length: int = 72) -> str:
+    first_sentence = _split_sentences(article_text)[0] if _split_sentences(article_text) else article_text
+    return first_sentence.strip().rstrip(".。")[:max_length].rstrip()
 
 
 def _sentence_matches_source(sentence: str, article_text: str) -> bool:
@@ -121,6 +120,36 @@ def _strip_markdown_fences(value: str) -> str:
         stripped = re.sub(r"^```(?:json)?\s*", "", stripped, flags=re.IGNORECASE)
         stripped = re.sub(r"\s*```$", "", stripped)
     return stripped.strip()
+
+
+def _extract_first_json_object(value: str) -> str:
+    start = value.find("{")
+    if start == -1:
+        raise json.JSONDecodeError("No JSON object found", value, 0)
+
+    in_string = False
+    escaped = False
+    depth = 0
+    for index in range(start, len(value)):
+        char = value[index]
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\" and in_string:
+            escaped = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return value[start : index + 1]
+    raise json.JSONDecodeError("Unterminated JSON object", value, start)
 
 
 def _blocked(reason: str) -> ArticleAnalysisResult:

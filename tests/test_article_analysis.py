@@ -43,6 +43,42 @@ def test_article_analysis_rejects_invalid_json():
     assert "valid JSON" in result.reason
 
 
+def test_article_analysis_accepts_first_json_object_before_extra_text():
+    def generator(_: str) -> str:
+        return (
+            '{"suggested_title":"Local Article Analysis",'
+            '"summary":"The article explains local analysis.",'
+            '"key_sentences":["Offline tools are useful when private files cannot leave the device."],'
+            '"reason":"privacy"}'
+            "\n\nExtra text that the model should not have emitted."
+        )
+
+    result = analyze_article_text(ARTICLE_TEXT, generator=generator)
+
+    assert result.status is SuggestionStatus.READY
+    assert result.suggested_title == "Local Article Analysis"
+
+
+def test_article_analysis_repairs_llm_output_with_only_key_sentences():
+    def generator(_: str) -> str:
+        return (
+            '{"key_sentences":['
+            '"Offline tools are useful when private files cannot leave the device.",'
+            '"DirectML can accelerate local language model generation on Windows GPUs."'
+            "]}\n\nReason: The model selected the most relevant sentences."
+        )
+
+    result = analyze_article_text(ARTICLE_TEXT, generator=generator)
+
+    assert result.status is SuggestionStatus.READY
+    assert result.suggested_title == "Offline tools are useful when private files cannot leave the device"
+    assert result.summary == (
+        "Offline tools are useful when private files cannot leave the device. "
+        "DirectML can accelerate local language model generation on Windows GPUs."
+    )
+    assert len(result.key_sentences) == 2
+
+
 def test_article_analysis_rejects_hallucinated_key_sentences():
     def generator(_: str) -> str:
         return json.dumps(
