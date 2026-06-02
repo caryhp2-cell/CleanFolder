@@ -1,36 +1,85 @@
+import json
+
 from offline_npu_renamer.core.article_analysis import analyze_article_text
-from offline_npu_renamer.core.models import ModelAssetStatus, NpuStatus, SuggestionStatus
+from offline_npu_renamer.core.models import SuggestionStatus
 
 
-def test_article_analysis_requires_model_and_npu_gate():
-    result = analyze_article_text(
-        text="This article should not be analyzed without the offline model gate.",
-        model_status=ModelAssetStatus(False, "Missing bundled model", ()),
-        npu_status=NpuStatus(True, "OpenVINOExecutionProvider", "ok", ("OpenVINOExecutionProvider",)),
-    )
+ARTICLE_TEXT = (
+    "Offline tools are useful when private files cannot leave the device. "
+    "DirectML can accelerate local language model generation on Windows GPUs. "
+    "The article analyzer should return a short title, summary, and copied key sentences."
+)
+
+
+def test_article_analysis_accepts_valid_llm_json():
+    def generator(text: str) -> str:
+        assert "Offline tools are useful" in text
+        return json.dumps(
+            {
+                "suggested_title": "Local Article Analysis",
+                "summary": "The article explains why local analysis helps private files.",
+                "key_sentences": [
+                    "Offline tools are useful when private files cannot leave the device.",
+                    "DirectML can accelerate local language model generation on Windows GPUs.",
+                ],
+                "reason": "These sentences capture privacy and performance.",
+            }
+        )
+
+    result = analyze_article_text(ARTICLE_TEXT, generator=generator)
+
+    assert result.status is SuggestionStatus.READY
+    assert result.suggested_title == "Local Article Analysis"
+    assert "private files" in result.summary
+    assert len(result.key_sentences) == 2
+    assert "privacy" in result.reason
+
+
+def test_article_analysis_rejects_invalid_json():
+    result = analyze_article_text(ARTICLE_TEXT, generator=lambda _: "not-json")
 
     assert result.status is SuggestionStatus.ERROR
     assert result.summary == ""
-    assert "Missing bundled model" in result.reason
+    assert "valid JSON" in result.reason
 
 
-def test_article_analysis_returns_extractive_summary_and_title():
-    text = (
-        "Offline AI tools are useful when files cannot leave the device. "
-        "A local NPU can run compact models with lower power than a CPU. "
-        "The renamer app already validates bundled ONNX models before analysis. "
-        "The new article feature should reuse the same offline model and NPU gate. "
-        "Users should see a short summary, key sentences, and a suggested title."
-    )
+def test_article_analysis_rejects_hallucinated_key_sentences():
+    def generator(_: str) -> str:
+        return json.dumps(
+            {
+                "suggested_title": "Local Article Analysis",
+                "summary": "The article explains local analysis.",
+                "key_sentences": ["The cloud service stores every article permanently."],
+                "reason": "The sentence is important.",
+            }
+        )
 
-    result = analyze_article_text(
-        text=text,
-        model_status=ModelAssetStatus(True, "models ok", ("document-title-v1",)),
-        npu_status=NpuStatus(True, "OpenVINOExecutionProvider", "ok", ("OpenVINOExecutionProvider",)),
-        max_sentences=2,
-    )
+    result = analyze_article_text(ARTICLE_TEXT, generator=generator)
 
-    assert result.status is SuggestionStatus.READY
-    assert result.suggested_title == "Offline AI tools are useful when files cannot leave the device"
-    assert len(result.key_sentences) == 2
-    assert "offline model and NPU gate" in result.summary
+    assert result.status is SuggestionStatus.ERROR
+    assert "not found in the article" in result.reason
+
+
+def test_article_analysis_rejects_empty_text_before_generation():
+    called = False
+
+    def generator(_: str) -> str:
+        nonlocal called
+        called = True
+        return "{}"
+
+    result = analyze_article_text("  \n\t", generator=generator)
+
+    assert result.status is SuggestionStatus.ERROR
+    assert result.reason == "No article text was found."
+    assert called is False
+
+
+def test_article_analysis_reports_generator_failure():
+    def generator(_: str) -> str:
+        raise RuntimeError("DirectML provider unavailable")
+
+    result = analyze_article_text(ARTICLE_TEXT, generator=generator)
+
+    assert result.status is SuggestionStatus.ERROR
+    assert "DirectML provider unavailable" in result.reason
